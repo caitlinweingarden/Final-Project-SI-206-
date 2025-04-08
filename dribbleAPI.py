@@ -14,7 +14,7 @@ api_url = "https://api.dribbble.com/v2/user"
 headers = {
     "Authorization": f"Bearer {ACCESS_TOKEN}"
 }
-
+print(api_url)
 response = requests.get(api_url, headers=headers)
 
 if response.status_code == 200:
