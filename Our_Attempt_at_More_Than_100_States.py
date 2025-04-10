@@ -15,15 +15,7 @@ API_KEY =  os.getenv("API_KEY")        # Your USAJOBS API Key
 db_name = 'usajobs.db'
 
 
-
-
-
-
-
-
-
-#copy after this line!!!!
-
+# List of all valid U.S. states
 valid_states = [
     "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
     "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky",
@@ -34,6 +26,7 @@ valid_states = [
     "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
 ]
 
+# Headers for the API request
 headers = {
     "Host": "data.usajobs.gov",
     "User-Agent": USER_AGENT,
@@ -45,6 +38,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 conn = sqlite3.connect(path + "/" + db_name)
 cur = conn.cursor()
 
+# Create Jobs table if not exists
 cur.execute('''
     CREATE TABLE IF NOT EXISTS Jobs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,12 +47,11 @@ cur.execute('''
         location TEXT NOT NULL
     )
 ''')
-cur.execute('DELETE FROM Jobs')
 conn.commit()
 
 # Data fetching loop
 clean_jobs_inserted = 0
-max_jobs = 100
+max_jobs = 1000  # Increase this if you need more than 1000 jobs
 
 for state in valid_states:
     if clean_jobs_inserted >= max_jobs:
@@ -71,18 +64,19 @@ for state in valid_states:
         if clean_jobs_inserted >= max_jobs:
             break
 
+        # API request parameters
         url = "https://data.usajobs.gov/api/search"
         params = {
-            "Keyword": "Software",
+            "Keyword": "Software",  # You can modify this to other keywords if needed
             "LocationName": state,
-            "ResultsPerPage": 50,
+            "ResultsPerPage": 50,  # Adjust based on how many jobs per request you want
             "Page": page
         }
 
         response = requests.get(url, headers=headers, params=params)
 
         if response.status_code != 200:
-            print(f" Error for {state} page {page}: {response.status_code}")
+            print(f"❌ Error for {state} page {page}: {response.status_code}")
             break
 
         data = response.json()
@@ -102,14 +96,7 @@ for state in valid_states:
             if any(word.lower() in job_location.lower() for word in skip_keywords):
                 continue
 
-            # Extract state portion of location
-            if "," in job_location:
-                *_, last_part = [p.strip() for p in job_location.split(",")]
-                if last_part not in valid_states:
-                    continue
-            else:
-                continue
-
+            # Insert the job data into the database
             cur.execute('''
                 INSERT INTO Jobs (title, organization, location)
                 VALUES (?, ?, ?)
@@ -127,11 +114,3 @@ conn.commit()
 conn.close()
 
 print(f"\n🎉 Done! {clean_jobs_inserted} jobs with clear state locations added to the database.")
-
-
-
-
-
-
-
-
