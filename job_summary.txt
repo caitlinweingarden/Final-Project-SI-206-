@@ -1,0 +1,22 @@
+=== Job Count by Day of Week ===
+day_of_week
+Monday         0
+Tuesday      125
+Wednesday      0
+Thursday       0
+Friday         0
+Saturday       0
+Sunday         0
+
+=== 10 Alphabetically Sorted Job Locations ===
+location
+Anchorage, Alaska                          7
+Broadway Complex, San Diego, California    3
+Chatsworth, California                     3
+China Lake, California                     5
+Chula Vista, California                    3
+Eielson AFB, Alaska                        8
+Elmendorf AFB, Alaska                      4
+Fort Hunter Liggett, California            1
+Fort Irwin, California                     5
+Fort Richardson, Alaska                    5
