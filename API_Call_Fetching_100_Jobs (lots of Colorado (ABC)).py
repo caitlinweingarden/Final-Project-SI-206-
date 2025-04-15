@@ -109,6 +109,20 @@ for state in valid_states:
                     continue
             else:
                 continue
+            
+            new_inserts = 0 
+            for item in api_data: 
+                if new_inserts >= 25: 
+                    break
+                execute statement 
+
+                if cur.rowcount == 1: 
+                    new_inserts += 1
+            conn.commit
+
+
+
+
 
             cur.execute('''
                 INSERT INTO Jobs (title, organization, location)
