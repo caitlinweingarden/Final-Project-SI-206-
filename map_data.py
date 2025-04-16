@@ -292,19 +292,10 @@ import matplotlib.pyplot as plt
 mapbox_token = 'pk.eyJ1IjoiY2VpbGluZSIsImEiOiJjbTkwNGZobnIwanRtMmpwb3dvZTRyMTB4In0.-C6PmulyXbGp8FsLOIuTYw'
 
 # Connect to final database
-conn = sqlite3.connect("final_data.db")
+conn = sqlite3.connect("usajobs.db") 
 cur = conn.cursor()
 
 # --- STEP 1: Create tables ---
-cur.execute('''
-    CREATE TABLE IF NOT EXISTS Jobs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        organization TEXT,
-        location TEXT UNIQUE
-    )
-''')
-
 cur.execute('''
     CREATE TABLE IF NOT EXISTS Coordinates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -337,22 +328,11 @@ def get_coordinates(address):
         print(f"❌ Error fetching coords for {address}: {e}")
     return None
 
-# --- STEP 3: Load source job data from usajobs.db ---
-source_conn = sqlite3.connect("usajobs.db")
-source_cur = source_conn.cursor()
-source_cur.execute("SELECT title, organization, location FROM Jobs")
-all_jobs = source_cur.fetchall()
-source_conn.close()
-
-# --- STEP 4: Filter already-added jobs ---
-cur.execute("SELECT location FROM Jobs")
-existing_locations = set(row[0] for row in cur.fetchall())
-
-def normalize_location(loc):
-    return re.sub(r'\s+', '', loc.strip().lower())
-
-normalized_existing = {normalize_location(loc) for loc in existing_locations}
-jobs_to_add = [job for job in all_jobs if normalize_location(job[2]) not in normalized_existing]
+cur.execute('''
+    SELECT id, title, organization, location FROM Jobs
+    WHERE id NOT IN (SELECT job_id FROM Coordinates)
+''')
+jobs_to_add = cur.fetchall()
 
 
 # --- STEP 5: Add max 25 jobs per run ---
@@ -362,29 +342,16 @@ max_number = cur.fetchone()[0] or 0
 
 # Insert up to 25 new jobs
 inserted = 0
-for job in jobs_to_add:
-    if inserted >= 25:  # This breaks the loop after 25 jobs
-        break
-    title, org, location = job
+for job in jobs_to_add[:25]:  # Slice to max 25
+    job_id, title, org, location = job
     coords = get_coordinates(location)
     if coords:
         lat, lon = coords
         try:
-            # Increment the number before inserting
-            max_number += 1
-            cur.execute("INSERT INTO Jobs (title, organization, location, number) VALUES (?, ?, ?, ?)", (title, org, location, max_number))
-            conn.commit()
-
-            # Fetch the job ID after inserting
-            cur.execute("SELECT id FROM Jobs WHERE location = ?", (location,))
-            job_id = cur.fetchone()[0]
-
             # Insert coordinates linked to the job
             cur.execute("INSERT INTO Coordinates (job_id, latitude, longitude) VALUES (?, ?, ?)", (job_id, lat, lon))
             conn.commit()
-
-            inserted += 1  # Count the inserted job
-            print(f"✅ {max_number}. Inserted: {title} | {location} → ({lat}, {lon})")
+            print(f"✅ Inserted coordinates for: {title} | {location} → ({lat}, {lon})")
         except Exception as e:
             print(f"⚠️ Skipped {location}: {e}")
 
