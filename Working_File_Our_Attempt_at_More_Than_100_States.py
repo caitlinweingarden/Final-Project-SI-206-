@@ -9,9 +9,10 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
 load_dotenv()  # Loads variables from .env
+#We did this in order to hide the API key by storing it in a separate section
 
 # Set your credentials
-USER_AGENT = "caitliw@umich.edu"         # The email you used to sign up
+USER_AGENT = "caitliw@umich.edu"         # The email you used to sign up for USA Jobs
 API_KEY =  os.getenv("API_KEY")        # Your USAJOBS API Key
 
 db_name = 'usajobs.db'
@@ -32,6 +33,14 @@ valid_states = [
     "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
 ]
 
+salary_buckets = {0:"24999", 25: "25000:49999", 50: "50,000-$74999", 75: "75,000-$99999", 100: "100000-$124999", 125: "125000-$149999", 150: "150000-$174999", 175: "175000-$199999", 200: "200000"}
+
+
+salary_buckets[0] = "0:24999"
+"0:24999", "25000:49999", "50,000-$74999", "75,000-$99999", "100000-$124999", "125000-$149999", "150000-$174999", "175000-$199999" "200000"
+
+
+
 
 
 headers = {
@@ -40,7 +49,7 @@ headers = {
     "Authorization-Key": API_KEY
 }
 
-# === DB setup ===
+# This is how we set up the database
 path = os.getcwd()
 db_path = os.path.join(path, db_name)
 conn = sqlite3.connect(db_path)
@@ -69,11 +78,11 @@ cur.execute('''
 
 conn.commit()
 
-# === Count existing jobs ===
+# Counting the existing jobs 
 cur.execute("SELECT COUNT(*) FROM Jobs")
 existing_count = cur.fetchone()[0]
 
-# === Fetch jobs ===
+# Fetching the jobs
 inserted_this_run = 0
 max_to_insert = batch_size
 
@@ -98,7 +107,7 @@ for state in valid_states:
 
         response = requests.get(url, headers=headers, params=params)
         if response.status_code != 200:
-            print(f"❌ Error for {state} page {page}: {response.status_code}")
+            print(f" Error for {state} page {page}: {response.status_code}")
             break
 
         results = response.json().get("SearchResult", {}).get("SearchResultItems", [])
@@ -129,23 +138,23 @@ for state in valid_states:
             if any(word.lower() in job_location.lower() for word in ["Negotiable", "Anywhere", "Multiple", "Various", "Remote"]):
                 continue
 
-            # Correctly get the post date
+            # get the day the job was posted
             date_str = descriptor.get("PublicationStartDate", "")
     
             try:
                 if date_str:
-                    post_date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
+                   post_date = parser.isoparse(date_str)
                 else:
                     raise ValueError("Missing PublicationStartDate")
 
                 day_of_week = post_date.strftime("%A")  # Get the day of the week
             except Exception as e:
                 print(f"Error parsing date for job: {descriptor.get('PositionTitle')}, Error: {str(e)}")
-                post_date = datetime.now()  # Fallback to current date if there's an error
+                post_date = datetime.now()  # Fallback to current date if there's an error getting this which mean this must be where our error is happening
                 day_of_week = post_date.strftime("%A")
 
 
-            # Insert job
+            
             cur.execute('''
                 INSERT INTO Jobs (title, organization, location, salary_min, salary_max)
                 VALUES (?, ?, ?, ?, ?)
@@ -153,20 +162,20 @@ for state in valid_states:
 
             job_id = cur.lastrowid
 
-            # Insert metadata
+           
             cur.execute('''
                 INSERT INTO JobMetadata (job_id, post_date, day_of_week)
                 VALUES (?, ?, ?)
             ''', (job_id, post_date.strftime("%Y-%m-%d"), day_of_week))
 
             inserted_this_run += 1
-            print(f"✅ Inserted {inserted_this_run}: {title} | {job_location}")
+            print(f" Inserted {inserted_this_run}: {title} | {job_location}")
 
         page += 1
 
 conn.commit()
 
-# === Data analysis and visualizations ===
+#  Data analysis and visualizations
 query = """
 SELECT J.location, M.day_of_week
 FROM Jobs J
@@ -179,7 +188,7 @@ day_counts = df['day_of_week'].value_counts().reindex(
     ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 ).fillna(0).astype(int)
 
-# Alphabetical sample of 10 job locations
+# This is where we make an alphabetical sample of 10 job locations
 location_counts = (
     df.groupby("location").size().reset_index(name="count")
     .sort_values("location")
@@ -187,7 +196,7 @@ location_counts = (
     .set_index("location")["count"]
 )
 
-# Write to text file
+# Writing the text to a text file
 with open("job_summary.txt", "w") as f:
     f.write("=== Job Count by Day of Week ===\n")
     f.write(day_counts.to_string())
@@ -215,50 +224,13 @@ plt.tight_layout()
 plt.savefig('jobs_by_location.png')
 plt.close()
 
-print("✅ Plots saved as 'jobs_by_day.png' and 'jobs_by_location.png'")
+print("Plots saved as 'jobs_by_day.png' and 'jobs_by_location.png'")
 
 conn.close()
-print(f"\n🎉 Done! {inserted_this_run} new jobs added to the database.")
+print(f"\n Done! {inserted_this_run} new jobs added to the database.")
 
+#calculations is in one file 
+#visualizationseach one is in one file 
+#creating the database and fetching/storing the database stuff is in one file. 
 
-#             organization = descriptor.get("OrganizationName", "N/A")
-#             job_location = descriptor.get("PositionLocationDisplay", "")
-
-#             # Skip if job location is vague
-#             skip_keywords = ["Negotiable", "Anywhere", "Multiple", "Various", "Remote"]
-#             if any(word.lower() in job_location.lower() for word in skip_keywords):
-#                 continue
-
-#             new_inserts = 0 
-#             for item in results: 
-#                 if new_inserts >= 25: 
-#                     break
-
-#             if cur.rowcount == 1: 
-#                     new_inserts += 1
-#             conn.commit
-
-
-
-#             # Insert the job data into the database
-#             cur.execute('''
-#                 INSERT INTO Jobs (title, organization, location)
-#                 VALUES (?, ?, ?)
-#             ''', (title, organization, job_location))
-
-#             clean_jobs_inserted += 1
-#             print(f"✅ {clean_jobs_inserted}. {title} | {job_location}")
-
-#             if clean_jobs_inserted >= max_jobs:
-#                 break
-
-#         page += 1
-
-
-
-        
-
-# conn.commit()
-# conn.close()
-
-# print(f"\n🎉 Done! {clean_jobs_inserted} jobs with clear state locations added to the database.")
+         

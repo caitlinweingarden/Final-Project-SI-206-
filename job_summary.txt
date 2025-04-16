@@ -2,7 +2,7 @@
 day_of_week
 Monday         0
 Tuesday      125
-Wednesday      0
+Wednesday    100
 Thursday       0
 Friday         0
 Saturday       0
@@ -11,12 +11,12 @@ Sunday         0
 === 10 Alphabetically Sorted Job Locations ===
 location
 Anchorage, Alaska                          7
-Broadway Complex, San Diego, California    3
-Chatsworth, California                     3
-China Lake, California                     5
-Chula Vista, California                    3
-Eielson AFB, Alaska                        8
-Elmendorf AFB, Alaska                      4
-Fort Hunter Liggett, California            1
-Fort Irwin, California                     5
-Fort Richardson, Alaska                    5
+Aurora, Colorado                           1
+Bakersfield, California                    2
+Bishop, California                         2
+Broadway Complex, San Diego, California    5
+Camp Pendleton, California                 2
+Capitola, California                       2
+Chatsworth, California                     6
+China Lake, California                     6
+Chula Vista, California                    4
