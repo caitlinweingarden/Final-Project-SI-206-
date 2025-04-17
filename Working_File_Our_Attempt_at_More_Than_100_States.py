@@ -150,7 +150,7 @@ for state in valid_states:
 
     
             cur.execute('''
-                INSERT INTO Jobs (title, organization, location, salary_min, salary_max)
+                INSERT OR IGNORE INTO Jobs (title, organization, location, salary_min, salary_max)
                 VALUES (?, ?, ?, ?, ?)
             ''', (title, organization, job_location, salary_min, salary_max))
 

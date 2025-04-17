@@ -27,7 +27,6 @@ try:
     cur.execute("ALTER TABLE Jobs ADD COLUMN number INTEGER")
     conn.commit()
 except sqlite3.OperationalError:
-    # Column already exists
     pass
 
 conn.commit()
