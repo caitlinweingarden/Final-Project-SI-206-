@@ -186,38 +186,5 @@ print(f"\n All Done! {inserted_this_run} new jobs added to the database.")
 
 
 
-# #  Data analysis and visualizations
-# query = """
-# SELECT J.location, M.day_of_week
-# FROM Jobs J
-# JOIN JobMetadata M ON J.id = M.job_id
-# """
-# df = pd.read_sql_query(query, conn)
-
-# # Jobs per day
-# day_counts = df['day_of_week'].value_counts().reindex(
-#     ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-# ).fillna(0).astype(int)
-
-# This is where we make an alphabetical sample of 10 job locations
-# location_counts = (
-#     df.groupby("location").size().reset_index(name="count")
-#     .sort_values("location")
-#     .head(10)
-#     .set_index("location")["count"]
-# )
-
-# # Writing the text to a text file
-# with open("job_summary.txt", "w") as f:
-#     f.write("=== Job Count by Day of Week ===\n")
-#     f.write(day_counts.to_string())
-#     f.write("\n\n=== 10 Alphabetically Sorted Job Locations ===\n")
-#     f.write(location_counts.to_string())
-
-
-
-#calculations is in one file 
-#visualizationseach one is in one file 
-#creating the database and fetching/storing the database stuff is in one file. 
 
          
