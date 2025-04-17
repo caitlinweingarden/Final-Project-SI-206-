@@ -99,11 +99,6 @@ valid_states = [
 ]
 
 #here we are not yet finished but this is where we are trying to get salary bucket information to find which job relates to which salary bucket. 
-salary_buckets = {0:"24999", 25: "25000:49999", 50: "50,000-$74999", 75: "75,000-$99999", 100: "100000-$124999", 125: "125000-$149999", 150: "150000-$174999", 175: "175000-$199999", 200: "200000"}
-
-
-salary_buckets[0] = "0:24999"
-"0:24999", "25000:49999", "50,000-$74999", "75,000-$99999", "100000-$124999", "125000-$149999", "150000-$174999", "175000-$199999" "200000"
 
 
 
@@ -192,6 +187,7 @@ for state in valid_states:
             organization = descriptor.get("OrganizationName", "N/A")
             job_location = descriptor.get("PositionLocationDisplay", "")
             salary_info = descriptor.get("PositionRemuneration", [])
+            print(f"the salary info is{salary_info}")
             salary_min = salary_max = None
 
 
@@ -200,12 +196,13 @@ for state in valid_states:
             #here is where we try to get the salary info by saving the varibale 
             #names as salary_max, and salary_min 
             for salary in salary_info:
-                if salary.get("CurrencyCode") == "USD":
-                    salary_min = float(salary.get("MinimumRange", 0))
-                    salary_max = float(salary.get("MaximumRange", 0))
-                    break
-                    #here it checks if there is a job that 
-                    #doesn't have an exact location and filters those out of the mix
+                salary_min = float(salary.get("MinimumRange", 0))
+                print(f"the salary min is {salary_min}")
+                salary_max = float(salary.get("MaximumRange", 0))
+                print(f"the salary max is {salary_max}")
+                break
+                #here it checks if there is a job that 
+                #doesn't have an exact location and filters those out of the mix
             if any(word.lower() in job_location.lower() for word in ["Negotiable", "Anywhere", "Multiple", "Various", "Remote"]):
                 continue
              # Get or insert the title, organization, and location into lookup tables
