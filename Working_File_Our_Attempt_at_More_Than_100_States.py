@@ -49,11 +49,14 @@ headers = {
     "Authorization-Key": API_KEY
 }
 
-# This is how we set up the database
+# Here  is where connect to SQl and create the database. 
 path = os.getcwd()
 db_path = os.path.join(path, db_name)
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
+
+#Here we created the table and checks if no jobs exist as well. 
+
 
 cur.execute('''
     CREATE TABLE IF NOT EXISTS Jobs (
@@ -66,15 +69,15 @@ cur.execute('''
     )
 ''')
 
-cur.execute('''
-    CREATE TABLE IF NOT EXISTS JobMetadata (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        job_id INTEGER NOT NULL,
-        post_date TEXT,
-        day_of_week TEXT,
-        FOREIGN KEY (job_id) REFERENCES Jobs(id)
-    )
-''')
+# cur.execute('''
+#     CREATE TABLE IF NOT EXISTS JobMetadata (
+#         id INTEGER PRIMARY KEY AUTOINCREMENT,
+#         job_id INTEGER NOT NULL,
+#         post_date TEXT,
+#         day_of_week TEXT,
+#         FOREIGN KEY (job_id) REFERENCES Jobs(id)
+#     )
+# ''')
 
 conn.commit()
 
@@ -82,7 +85,7 @@ conn.commit()
 cur.execute("SELECT COUNT(*) FROM Jobs")
 existing_count = cur.fetchone()[0]
 
-# Fetching the jobs
+# Getting the jobs 
 inserted_this_run = 0
 max_to_insert = batch_size
 
@@ -90,7 +93,7 @@ for state in valid_states:
     if inserted_this_run >= max_to_insert:
         break
 
-    print(f"\n🔍 Searching jobs in {state}...")
+    print(f"\n Searching for jobs in {state}...")
     page = 1
 
     while True:
@@ -111,6 +114,9 @@ for state in valid_states:
             break
 
         results = response.json().get("SearchResult", {}).get("SearchResultItems", [])
+
+        results_salary = response.json().get("SearchResult", {})
+        
         if not results:
             break
 
@@ -138,23 +144,7 @@ for state in valid_states:
             if any(word.lower() in job_location.lower() for word in ["Negotiable", "Anywhere", "Multiple", "Various", "Remote"]):
                 continue
 
-            # get the day the job was posted
-            date_str = descriptor.get("PublicationStartDate", "")
     
-            try:
-                if date_str:
-                   post_date = parser.isoparse(date_str)
-                else:
-                    raise ValueError("Missing PublicationStartDate")
-
-                day_of_week = post_date.strftime("%A")  # Get the day of the week
-            except Exception as e:
-                print(f"Error parsing date for job: {descriptor.get('PositionTitle')}, Error: {str(e)}")
-                post_date = datetime.now()  # Fallback to current date if there's an error getting this which mean this must be where our error is happening
-                day_of_week = post_date.strftime("%A")
-
-
-            
             cur.execute('''
                 INSERT INTO Jobs (title, organization, location, salary_min, salary_max)
                 VALUES (?, ?, ?, ?, ?)
@@ -162,11 +152,6 @@ for state in valid_states:
 
             job_id = cur.lastrowid
 
-           
-            cur.execute('''
-                INSERT INTO JobMetadata (job_id, post_date, day_of_week)
-                VALUES (?, ?, ?)
-            ''', (job_id, post_date.strftime("%Y-%m-%d"), day_of_week))
 
             inserted_this_run += 1
             print(f" Inserted {inserted_this_run}: {title} | {job_location}")
@@ -203,28 +188,7 @@ with open("job_summary.txt", "w") as f:
     f.write("\n\n=== 10 Alphabetically Sorted Job Locations ===\n")
     f.write(location_counts.to_string())
 
-# Plot 1: Jobs by Day of the Week
-plt.figure(figsize=(8, 5))
-day_counts.plot(kind='bar', color='skyblue')
-plt.title('Jobs Posted by Day of the Week')
-plt.xlabel('Day of the Week')
-plt.ylabel('Number of Jobs')
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.savefig('jobs_by_day.png')
-plt.close()
 
-# Plot 2: Alphabetical Job Locations
-plt.figure(figsize=(8, 5))
-location_counts.plot(kind='barh', color='lightgreen')
-plt.title('10 Job Locations (Alphabetical Sample)')
-plt.xlabel('Number of Jobs')
-plt.ylabel('Location')
-plt.tight_layout()
-plt.savefig('jobs_by_location.png')
-plt.close()
-
-print("Plots saved as 'jobs_by_day.png' and 'jobs_by_location.png'")
 
 conn.close()
 print(f"\n Done! {inserted_this_run} new jobs added to the database.")

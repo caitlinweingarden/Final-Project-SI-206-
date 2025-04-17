@@ -1,10 +1,10 @@
 === Job Count by Day of Week ===
 day_of_week
-Monday         0
-Tuesday      125
-Wednesday    100
-Thursday       0
-Friday         0
+Monday        14
+Tuesday      135
+Wednesday    158
+Thursday       8
+Friday        10
 Saturday       0
 Sunday         0
 
@@ -13,10 +13,10 @@ location
 Anchorage, Alaska                          7
 Aurora, Colorado                           1
 Bakersfield, California                    2
+Barksdale AFB, Louisiana                   3
+Barstow, California                        1
 Bishop, California                         2
 Broadway Complex, San Diego, California    5
 Camp Pendleton, California                 2
 Capitola, California                       2
-Chatsworth, California                     6
-China Lake, California                     6
-Chula Vista, California                    4
+Charlotte, North Carolina                  3
