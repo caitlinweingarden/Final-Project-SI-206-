@@ -15,14 +15,21 @@ load_dotenv()  # Loads variables from .env
 USER_AGENT = "caitliw@umich.edu"         # The email you used to sign up for USA Jobs
 API_KEY =  os.getenv("API_KEY")        # Your USAJOBS API Key
 
-db_name = 'usajobs.db'
+db_name = 'usajobs.db' #this is where we name our database
 
 batch_size = 25
+#the batch size is the amount of jobs that get added to that data base at a time 
 
-# Use current working directory instead of __file__
+
+
+
+#this is where we get the working directory and combine it with usajobs to create a full path. 
 path = os.getcwd()
 db_path = os.path.join(path, db_name)
 
+
+
+#here is where we establish what headers we need to access the data from the API
 headers = {
     "Host": "data.usajobs.gov",
     "User-Agent": USER_AGENT,
@@ -35,7 +42,7 @@ db_path = os.path.join(path, db_name)
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
-
+#This creates the table called jobs and checks if it doesn't exist as well
 cur.execute('''
     CREATE TABLE IF NOT EXISTS Jobs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,6 +57,7 @@ cur.execute('''
 
 conn.commit()
 
+#here we are listing all the possible states that could be an option for the database, since it is only U.S States
 valid_states = [
     "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
     "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky",
@@ -60,6 +68,7 @@ valid_states = [
     "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
 ]
 
+#here we are not yet finished but this is where we are trying to get salary bucket information to find which job relates to which salary bucket. 
 salary_buckets = {0:"24999", 25: "25000:49999", 50: "50,000-$74999", 75: "75,000-$99999", 100: "100000-$124999", 125: "125000-$149999", 150: "150000-$174999", 175: "175000-$199999", 200: "200000"}
 
 
@@ -68,7 +77,9 @@ salary_buckets[0] = "0:24999"
 
 
 
-#Here we created the table and checks if no jobs exist as well. 
+#Here this is where we define what kind of information we are storing in the table about each job
+#so in this case we are getting the id, job title, organization, location, and 
+#still attempting to grab the salaries
 
 
 cur.execute('''
@@ -85,14 +96,18 @@ cur.execute('''
 
 conn.commit()
 
-# Counting the existing jobs 
+# this part counts if the job already exists in the database, and if it does then it skips over them
 cur.execute("SELECT COUNT(*) FROM Jobs")
 existing_count = cur.fetchone()[0]
 
-# Getting the jobs 
+
+
+
+
+
+# this code block loops through each state and keeps going until the batch size (25) is reached
 inserted_this_run = 0
 max_to_insert = batch_size
-
 for state in valid_states:
     if inserted_this_run >= max_to_insert:
         break
@@ -103,6 +118,12 @@ for state in valid_states:
     while True:
         if inserted_this_run >= max_to_insert:
             break
+
+
+
+            #this line of code sends a request to get job data 
+            #from the USAJOBS API. It also tries to get 50 job results 
+            #per page. 
 
         url = "https://data.usajobs.gov/api/search"
         params = {
@@ -123,7 +144,11 @@ for state in valid_states:
         
         if not results:
             break
+        
 
+
+        #this section of the code grabs the keys from each job (values) and 
+        #gravs the title organization and tries to get salary info too. 
         for job in results:
             if inserted_this_run >= max_to_insert:
                 break
@@ -139,16 +164,25 @@ for state in valid_states:
             salary_info = descriptor.get("PositionRemuneration", [])
             salary_min = salary_max = None
 
+
+
+
+            #here is where we try to get the salary info by saving the varibale 
+            #names as salary_max, and salary_min 
             for salary in salary_info:
                 if salary.get("CurrencyCode") == "USD":
                     salary_min = float(salary.get("MinimumRange", 0))
                     salary_max = float(salary.get("MaximumRange", 0))
                     break
-
+                    #here it checks if there is a job that 
+                    #doesn't have an exact location and filters those out of the mix
             if any(word.lower() in job_location.lower() for word in ["Negotiable", "Anywhere", "Multiple", "Various", "Remote"]):
                 continue
 
-    
+            
+
+            #this last section inserts the keys relating to the job into 
+            #the job database
             cur.execute('''
                 INSERT INTO Jobs (title, organization, location, salary_min, salary_max)
                 VALUES (?, ?, ?, ?, ?)
@@ -162,20 +196,54 @@ for state in valid_states:
 
         page += 1
 
-#above is where we fetch the data and add it to the database. 
 
-
-
-
-
-
-
+#this last part saves all the changes and closes the SQL connection 
 
 conn.commit()
-
-
 conn.close()
 print(f"\n All Done! {inserted_this_run} new jobs added to the database.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
