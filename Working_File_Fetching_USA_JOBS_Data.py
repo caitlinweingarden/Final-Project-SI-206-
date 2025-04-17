@@ -15,13 +15,11 @@ load_dotenv()  # Loads variables from .env
 USER_AGENT = "caitliw@umich.edu"         # The email you used to sign up for USA Jobs
 API_KEY =  os.getenv("API_KEY")        # Your USAJOBS API Key
 
+
 db_name = 'usajobs.db' #this is where we name our database
 
 batch_size = 25
 #the batch size is the amount of jobs that get added to that data base at a time 
-
-
-
 
 #this is where we get the working directory and combine it with usajobs to create a full path. 
 path = os.getcwd()
@@ -38,22 +36,54 @@ headers = {
 
 # Here  is where connect to SQl and create the database. 
 path = os.getcwd()
-db_path = os.path.join(path, db_name)
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
+
+cur.execute('''
+    CREATE TABLE IF NOT EXISTS Titles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL
+    )
+''')
+
+cur.execute('''
+    CREATE TABLE IF NOT EXISTS Organizations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        organization TEXT NOT NULL
+    )
+''')
+
+cur.execute('''
+    CREATE TABLE IF NOT EXISTS Locations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        location TEXT NOT NULL
+    )
+''')
+
+
 
 #This creates the table called jobs and checks if it doesn't exist as well
 cur.execute('''
     CREATE TABLE IF NOT EXISTS Jobs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        organization TEXT NOT NULL,
-        location TEXT NOT NULL,
+        title_id INTEGER NOT NULL,
+        organization_id INTEGER NOT NULL,
+        location_id INTEGER NOT NULL,
         salary_min REAL,
-        salary_max REAL
+        salary_max REAL,
+        FOREIGN KEY (title_id) REFERENCES Titles(id),
+        FOREIGN KEY (organization_id) REFERENCES Organizations(id),
+        FOREIGN KEY (location_id) REFERENCES Locations(id)
     )
 ''')
-
+def get_or_insert(cur, table_name, column_name, value):
+    cur.execute(f"SELECT id FROM {table_name} WHERE {column_name} = ?", (value,))
+    result = cur.fetchone()
+    if result:
+        return result[0]
+    else:
+        cur.execute(f"INSERT INTO {table_name} ({column_name}) VALUES (?)", (value,))
+        return cur.lastrowid
 
 conn.commit()
 
@@ -85,9 +115,9 @@ salary_buckets[0] = "0:24999"
 cur.execute('''
     CREATE TABLE IF NOT EXISTS Jobs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        organization TEXT NOT NULL,
-        location TEXT NOT NULL,
+        title_id TEXT NOT NULL,
+        organization_id TEXT NOT NULL,
+        location_id TEXT NOT NULL,
         salary_min REAL,
         salary_max REAL
     )
@@ -178,15 +208,18 @@ for state in valid_states:
                     #doesn't have an exact location and filters those out of the mix
             if any(word.lower() in job_location.lower() for word in ["Negotiable", "Anywhere", "Multiple", "Various", "Remote"]):
                 continue
-
+             # Get or insert the title, organization, and location into lookup tables
+            title_id= get_or_insert(cur, 'Titles', 'title', title)
+            organization_id = get_or_insert(cur, 'Organizations', 'organization', organization)
+            location_id = get_or_insert(cur, 'Locations', 'location', job_location)
             
 
             #this last section inserts the keys relating to the job into 
             #the job database
             cur.execute('''
-                INSERT INTO Jobs (title, organization, location, salary_min, salary_max)
+                INSERT INTO Jobs (title_id, organization_id, location_id, salary_min, salary_max)
                 VALUES (?, ?, ?, ?, ?)
-            ''', (title, organization, job_location, salary_min, salary_max))
+            ''', (title_id, organization_id, location_id, salary_min, salary_max))
 
             job_id = cur.lastrowid
 
@@ -205,7 +238,7 @@ print(f"\n All Done! {inserted_this_run} new jobs added to the database.")
 
 
 
-
+#****************************
 
 
 
