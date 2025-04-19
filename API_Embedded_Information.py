@@ -23,8 +23,3 @@ if response.status_code == 200:
 else: 
     print(f"Error: {response.status_code} - {response.text}")
 
-# if data['Response'] == 'False': 
-    # return None
-    # print(data, response.url)
-# except requests.RequestException:
-    # return None
