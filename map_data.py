@@ -43,13 +43,15 @@ def get_coordinates(address):
     except Exception as e:
         print(f"Error fetching the coordinates for {address}: {e}")
     return None
-
 cur.execute('''
-    SELECT id, title, organization, location FROM Jobs
-    WHERE id NOT IN (SELECT job_id FROM Coordinates)
+    SELECT Jobs.id, Titles.title, Organizations.organization, Locations.location
+    FROM Jobs
+    JOIN Titles ON Jobs.title_id = Titles.id
+    JOIN Organizations ON Jobs.organization_id = Organizations.id
+    JOIN Locations ON Jobs.location_id = Locations.id
+    WHERE Jobs.id NOT IN (SELECT job_id FROM Coordinates)
 ''')
 jobs_to_add = cur.fetchall()
-
 
 # max 25 jobs per run
 cur.execute("SELECT MAX(number) FROM Jobs")
@@ -71,7 +73,15 @@ for job in jobs_to_add[:25]:  # Slice to max 25
             print(f"Skipped {location}: {e}")
 
 # Process the data: Job counts per state 
-cur.execute("SELECT location FROM Jobs")
+cur.execute('''
+    SELECT Jobs.id, Titles.title, Organizations.organization, Locations.location
+    FROM Jobs
+    JOIN Titles ON Jobs.title_id = Titles.id
+    JOIN Organizations ON Jobs.organization_id = Organizations.id
+    JOIN Locations ON Jobs.location_id = Locations.id
+    WHERE Jobs.id NOT IN (SELECT job_id FROM Coordinates)
+''')
+jobs_to_add = cur.fetchall()
 locations = [row[0] for row in cur.fetchall()]
 
 def extract_state(location):
@@ -85,10 +95,11 @@ state_counts = Counter(states)
 
 # join query to include Coordinates (requirement)
 cur.execute('''
-    SELECT J.location, COUNT(*) 
-    FROM Jobs J 
-    JOIN Coordinates C ON J.id = C.job_id 
-    GROUP BY J.location
+    SELECT Locations.location, COUNT(*) 
+    FROM Jobs J
+    JOIN Coordinates C ON J.id = C.job_id
+    JOIN Locations ON J.location_id = Locations.id  -- Join with Locations to get the location
+    GROUP BY Locations.location  -- Group by the location in the Locations table
 ''')
 joined_results = cur.fetchall()
 
