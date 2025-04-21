@@ -25,8 +25,6 @@ batch_size = 25
 path = os.getcwd()
 db_path = os.path.join(path, db_name)
 
-
-
 #here is where we establish what headers we need to access the data from the API
 headers = {
     "Host": "data.usajobs.gov",

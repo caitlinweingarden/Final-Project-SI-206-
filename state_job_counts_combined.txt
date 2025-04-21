@@ -1,6 +1,6 @@
 State	Total_Jobs	Jobs_With_Coordinates
-Alabama	0	1
-Alaska	0	34
-Arizona	0	27
-Arkansas	0	11
-California	0	27
+Alabama	1	1
+Alaska	34	34
+Arizona	28	28
+Arkansas	15	15
+California	47	47

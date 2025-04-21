@@ -79,10 +79,27 @@ cur.execute('''
     JOIN Titles ON Jobs.title_id = Titles.id
     JOIN Organizations ON Jobs.organization_id = Organizations.id
     JOIN Locations ON Jobs.location_id = Locations.id
-    WHERE Jobs.id NOT IN (SELECT job_id FROM Coordinates)
 ''')
-jobs_to_add = cur.fetchall()
-locations = [row[0] for row in cur.fetchall()]
+all_jobs = cur.fetchall()
+cur.execute('''
+    SELECT Locations.location 
+    FROM Jobs
+    JOIN Locations ON Jobs.location_id = Locations.id
+''')
+all_locations = [row[0] for row in cur.fetchall()]
+
+# Step 2: Extract state from each location
+def extract_state(location):
+    if not location:
+        return None
+    match = re.search(r',\s*([^,]+)$', location)
+    if match:
+        return match.group(1).strip()
+    return None
+
+# Step 3: Count jobs per state
+states = [extract_state(loc) for loc in all_locations if extract_state(loc)]
+state_counts = Counter(states)
 
 def extract_state(location):
     match = re.search(r',\s*([^,]+)$', location)
@@ -90,7 +107,11 @@ def extract_state(location):
         return match.group(1).strip()
     return None
 
-states = [extract_state(loc) for loc in locations if extract_state(loc)]
+states = []
+for loc in all_locations:
+    state = extract_state(loc)
+    if state:
+        states.append(state)
 state_counts = Counter(states)
 
 # join query to include Coordinates (requirement)
@@ -118,7 +139,7 @@ with open("state_job_counts_combined.txt", "w") as f:
         f.write(f"{state}\t{state_counts[state]}\t{joined_counts[state]}\n")
 print("📝 Saved job count summary to state_job_counts_combined.txt")
 
-# Heatmap of job coordinates (first data viz)
+# Heatmap of job coordinates (first data viz: heat map)
 cur.execute("SELECT latitude, longitude FROM Coordinates")
 coords = cur.fetchall()
 if coords:
@@ -127,16 +148,7 @@ if coords:
     m.save("job_heatmap.html")
     print("Heatmap saved to job_heatmap.html")
 
-# Matplotlib data viz: Total Jobs per State (Bar Chart)
-plt.figure(figsize=(10, 6))
-plt.bar(state_counts.keys(), state_counts.values(), color='skyblue')
-plt.xticks(rotation=45, ha='right')
-plt.title("Total Jobs per State")
-plt.tight_layout()
-plt.savefig("jobs_per_state.png")
-print("📊 Bar chart saved to jobs_per_state.png")
-
-# mathplotlib data viz: Jobs with Coordinates per State (Bar Chart)
+# mathplotlib data viz: Jobs with Coordinates per State (second data viz: Bar Chart)
 plt.figure(figsize=(10, 6))
 plt.bar(joined_counts.keys(), joined_counts.values(), color='salmon')
 plt.xticks(rotation=45, ha='right')
